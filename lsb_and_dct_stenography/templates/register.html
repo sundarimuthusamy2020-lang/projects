@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up - StegoCrypt{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="card auth-card">
+        <div class="auth-header">
+            <div class="auth-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="8.5" cy="7.5" r="4"></circle>
+                    <line x1="20" y1="8" x2="20" y2="14"></line>
+                    <line x1="23" y1="11" x2="17" y2="11"></line>
+                </svg>
+            </div>
+            <h2>Create an Account</h2>
+            <p>Create an account to track your private encode & decode steganography logs.</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('register') }}" class="auth-form">
+            <div class="form-group">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" id="username" name="username" class="form-control" placeholder="Choose a username" required autofocus minlength="3">
+            </div>
+
+            <div class="form-group">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" id="password" name="password" class="form-control" placeholder="At least 6 characters" required minlength="6">
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password" class="form-label">Confirm Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Confirm your password" required minlength="6">
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-lg">
+                <span>Create Account</span>
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Already have an account? <a href="{{ url_for('login') }}" class="text-link">Sign In</a></p>
+            <p><a href="{{ url_for('index') }}" class="text-muted text-sm">&larr; Return to Dashboard as Guest</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

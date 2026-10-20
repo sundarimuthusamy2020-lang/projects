@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Operation History - Hybrid LSB-DCT Steganography{% endblock %}
+
+{% block content %}
+<div class="dashboard-header history-header">
+    <div class="history-title-group">
+        <h1 class="hero-title">Operation History</h1>
+        <p class="hero-desc">
+            {% if current_user %}
+                Activity log for <strong>{{ current_user.username }}</strong>. Your secret image operations are logged below.
+            {% else %}
+                Temporary session history. <a href="{{ url_for('register') }}" class="text-link">Sign up</a> or <a href="{{ url_for('login') }}" class="text-link">Log in</a> to keep your history permanently.
+            {% endif %}
+        </p>
+    </div>
+
+    {% if records %}
+    <form action="{{ url_for('clear_history') }}" method="POST" onsubmit="return confirm('Are you sure you want to clear all your history records?');">
+        <button type="submit" class="btn btn-outline-danger btn-sm">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            <span>Clear All History</span>
+        </button>
+    </form>
+    {% endif %}
+</div>
+
+{% if not records %}
+<div class="card empty-history-card">
+    <div class="empty-icon">
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+    </div>
+    <h2>No History Records Yet</h2>
+    <p>You haven't performed any steganography operations yet.</p>
+    <a href="{{ url_for('index') }}" class="btn btn-primary btn-md">
+        <span>Go to Dashboard</span>
+    </a>
+</div>
+{% else %}
+<div class="card history-card">
+    <div class="table-responsive">
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Date & Time</th>
+                    <th>Image</th>
+                    <th>Resolution</th>
+                    <th>PSNR</th>
+                    <th>Message</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in records %}
+                <tr>
+                    <td>
+                        {% if item.operation_type == 'encode' %}
+                            <span class="badge badge-primary">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                                <span>Encode</span>
+                            </span>
+                        {% else %}
+                            <span class="badge badge-success">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
+                                <span>Decode</span>
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="text-muted">{{ item.created_at.strftime('%b %d, %Y %I:%M %p') }}</td>
+                    <td class="font-medium filename-cell" title="{{ item.original_filename }}">
+                        {{ item.original_filename }}
+                    </td>
+                    <td class="text-muted font-mono">
+                        {% if item.image_width and item.image_height %}
+                            {{ item.image_width }}&times;{{ item.image_height }}
+                        {% else %}
+                            --
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.psnr %}
+                            <span class="psnr-tag">{{ item.psnr }} dB</span>
+                        {% else %}
+                            <span class="text-muted">N/A</span>
+                        {% endif %}
+                    </td>
+                    <td class="message-preview-cell">
+                        <span class="msg-len font-mono">({{ item.message_length }} chars)</span>
+                        <span class="msg-text">{{ item.message_preview or '--' }}</span>
+                    </td>
+                    <td class="actions-cell">
+                        <div class="actions-row">
+                            {% if item.operation_type == 'encode' and item.stego_filename %}
+                            <a href="{{ url_for('download_file', filename=item.stego_filename) }}" class="btn btn-xs btn-outline" title="Download Stego Image">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                <span>Download</span>
+                            </a>
+                            {% endif %}
+                            <form action="{{ url_for('delete_history_record', record_id=item.id) }}" method="POST" onsubmit="return confirm('Delete this record?');" style="display:inline;">
+                                <button type="submit" class="btn btn-xs btn-icon-danger" title="Delete record">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

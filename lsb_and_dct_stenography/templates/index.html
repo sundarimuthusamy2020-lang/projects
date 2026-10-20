@@ -1,0 +1,340 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Hybrid LSB-DCT Steganography{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <div class="hero-badge">Hybrid LSB & DCT Algorithm</div>
+    <h1 class="hero-title">Secure Image Steganography</h1>
+    <p class="hero-desc">
+        Conceal confidential messages within digital images using frequency-domain Discrete Cosine Transform (DCT)
+        and spatial Least Significant Bit (LSB) embedding with high visual imperceptibility.
+    </p>
+</div>
+
+<!-- Main Tabs -->
+<div class="tabs-container">
+    <div class="tabs-nav">
+        <button type="button" class="tab-btn active" data-tab="tab-encode" id="btnTabEncode">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <span>1. Hide Message (Encode)</span>
+        </button>
+        <button type="button" class="tab-btn" data-tab="tab-decode" id="btnTabDecode">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+            </svg>
+            <span>2. Extract Message (Decode)</span>
+        </button>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 1: ENCODE PANEL                        -->
+    <!-- ========================================== -->
+    <div class="tab-pane active" id="tab-encode">
+        <div class="stego-grid">
+            <!-- Left: Input Form -->
+            <div class="card form-card">
+                <div class="card-header">
+                    <div class="card-title-group">
+                        <span class="step-num">Step 1</span>
+                        <h2 class="card-title">Upload Cover Image & Secret Message</h2>
+                    </div>
+                    <span class="card-subtitle">Supported formats: PNG, JPG, JPEG, BMP, WEBP</span>
+                </div>
+
+                <form id="encodeForm" enctype="multipart/form-data">
+                    <!-- Drop Zone -->
+                    <div class="drop-zone" id="encodeDropZone">
+                        <input type="file" name="image" id="encodeImageInput" accept="image/png,image/jpeg,image/webp,image/bmp" hidden required>
+                        <div class="drop-content" id="encodeDropContent">
+                            <div class="drop-icon">
+                                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                            </div>
+                            <p class="drop-title">Drag & drop cover image here</p>
+                            <p class="drop-hint">or <span class="browse-link">browse from your computer</span></p>
+                        </div>
+
+                        <!-- Image Preview in Drop Zone -->
+                        <div class="preview-box" id="encodePreviewBox" style="display: none;">
+                            <img id="encodeImagePreview" alt="Cover Image Preview">
+                            <div class="preview-overlay">
+                                <span class="file-name" id="encodeFileName">image.png</span>
+                                <span class="file-dims" id="encodeFileDims">-- x -- px</span>
+                                <button type="button" class="btn btn-xs btn-danger" id="encodeRemoveBtn">Remove</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Capacity Indicator -->
+                    <div class="capacity-meter-box" id="capacityBox" style="display: none;">
+                        <div class="capacity-header">
+                            <span class="capacity-title">Embedding Capacity</span>
+                            <span class="capacity-values" id="capacityValues">0 / 0 chars</span>
+                        </div>
+                        <div class="capacity-bar-track">
+                            <div class="capacity-bar-fill" id="capacityBarFill" style="width: 0%;"></div>
+                        </div>
+                        <p class="capacity-info" id="capacityInfoText">
+                            Calculated from 8x8 DCT blocks on Luminance (Y) channel.
+                        </p>
+                    </div>
+
+                    <!-- Message Input -->
+                    <div class="form-group">
+                        <label for="secretMessage" class="form-label">
+                            <span>Secret Message to Hide</span>
+                            <span class="char-count" id="charCountLabel">0 characters</span>
+                        </label>
+                        <textarea 
+                            id="secretMessage" 
+                            name="message" 
+                            rows="4" 
+                            class="form-control" 
+                            placeholder="Type or paste confidential message here..." 
+                            required></textarea>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn btn-primary btn-block btn-lg" id="btnSubmitEncode">
+                        <span class="btn-text">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                            <span>Embed Secret Message</span>
+                        </span>
+                        <span class="spinner" style="display: none;"></span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Right: Results Panel -->
+            <div class="card results-card" id="encodeResultsCard">
+                <div class="card-header">
+                    <div class="card-title-group">
+                        <span class="step-num">Step 2</span>
+                        <h2 class="card-title">Stego Image & Analysis</h2>
+                    </div>
+                    <span class="badge badge-success" id="encodeStatusBadge" style="display: none;">Embedded</span>
+                </div>
+
+                <!-- Empty State Placeholder -->
+                <div class="results-empty" id="encodeEmptyState">
+                    <div class="empty-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21 15 16 10 5 21"></polyline>
+                        </svg>
+                    </div>
+                    <h3>No Stego Image Yet</h3>
+                    <p>Upload a cover image and enter a message on the left to generate the encrypted stego image.</p>
+                </div>
+
+                <!-- Success Content -->
+                <div class="results-content" id="encodeSuccessContent" style="display: none;">
+                    <!-- Metrics Row -->
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <span class="metric-label">PSNR Quality</span>
+                            <span class="metric-value psnr-val" id="resPsnr">-- dB</span>
+                            <span class="metric-desc">Peak Signal-to-Noise</span>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-label">Message Size</span>
+                            <span class="metric-value" id="resMsgLen">-- chars</span>
+                            <span class="metric-desc">Payload Length</span>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-label">Dimensions</span>
+                            <span class="metric-value" id="resDimensions">-- x --</span>
+                            <span class="metric-desc">Image Resolution</span>
+                        </div>
+                    </div>
+
+                    <!-- Visual Comparison -->
+                    <div class="comparison-container">
+                        <div class="comparison-column">
+                            <span class="comp-title">Original Cover</span>
+                            <div class="comp-img-wrapper">
+                                <img id="resCoverImg" alt="Original Cover">
+                            </div>
+                        </div>
+                        <div class="comparison-column">
+                            <span class="comp-title">Stego Image (With Hidden Message)</span>
+                            <div class="comp-img-wrapper">
+                                <img id="resStegoImg" alt="Stego Image">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="action-buttons-group">
+                        <a id="btnDownloadStego" href="#" class="btn btn-success btn-lg btn-block" download>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            <span>Download Stego Image (PNG)</span>
+                        </a>
+                        <button type="button" class="btn btn-outline btn-block" id="btnQuickTestDecode">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 11 12 14 22 4"></polyline>
+                                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                            </svg>
+                            <span>Verify: Send directly to Decode Tab</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: DECODE PANEL                        -->
+    <!-- ========================================== -->
+    <div class="tab-pane" id="tab-decode">
+        <div class="stego-grid">
+            <!-- Left: Decode Input Form -->
+            <div class="card form-card">
+                <div class="card-header">
+                    <div class="card-title-group">
+                        <span class="step-num">Step 1</span>
+                        <h2 class="card-title">Upload Stego Image to Extract Message</h2>
+                    </div>
+                    <span class="card-subtitle">Upload the stego image containing hidden LSB-DCT data</span>
+                </div>
+
+                <form id="decodeForm" enctype="multipart/form-data">
+                    <div class="drop-zone" id="decodeDropZone">
+                        <input type="file" name="image" id="decodeImageInput" accept="image/png,image/jpeg,image/webp,image/bmp" hidden required>
+                        <div class="drop-content" id="decodeDropContent">
+                            <div class="drop-icon">
+                                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+                                </svg>
+                            </div>
+                            <p class="drop-title">Drag & drop encrypted stego image here</p>
+                            <p class="drop-hint">or <span class="browse-link">browse from your computer</span></p>
+                        </div>
+
+                        <!-- Image Preview -->
+                        <div class="preview-box" id="decodePreviewBox" style="display: none;">
+                            <img id="decodeImagePreview" alt="Stego Image Preview">
+                            <div class="preview-overlay">
+                                <span class="file-name" id="decodeFileName">stego.png</span>
+                                <span class="file-dims" id="decodeFileDims">-- x -- px</span>
+                                <button type="button" class="btn btn-xs btn-danger" id="decodeRemoveBtn">Remove</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block btn-lg" id="btnSubmitDecode">
+                        <span class="btn-text">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+                            </svg>
+                            <span>Extract Hidden Message</span>
+                        </span>
+                        <span class="spinner" style="display: none;"></span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Right: Extracted Secret Message Panel -->
+            <div class="card results-card" id="decodeResultsCard">
+                <div class="card-header">
+                    <div class="card-title-group">
+                        <span class="step-num">Step 2</span>
+                        <h2 class="card-title">Extracted Secret Message</h2>
+                    </div>
+                    <span class="badge badge-success" id="decodeStatusBadge" style="display: none;">Decoded</span>
+                </div>
+
+                <!-- Empty State -->
+                <div class="results-empty" id="decodeEmptyState">
+                    <div class="empty-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                    </div>
+                    <h3>No Message Extracted Yet</h3>
+                    <p>Upload a stego image on the left and click "Extract Hidden Message" to reveal the concealed payload.</p>
+                </div>
+
+                <!-- Success State -->
+                <div class="results-content" id="decodeSuccessContent" style="display: none;">
+                    <div class="extracted-meta-row">
+                        <div class="meta-item">
+                            <span class="meta-label">Source File:</span>
+                            <span class="meta-value" id="decSourceFile">--</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Length:</span>
+                            <span class="meta-value" id="decLength">0 chars</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Resolution:</span>
+                            <span class="meta-value" id="decDims">--</span>
+                        </div>
+                    </div>
+
+                    <div class="extracted-box-wrapper">
+                        <div class="extracted-box-header">
+                            <span class="box-tag">Secret Content</span>
+                            <button type="button" class="btn btn-xs btn-outline" id="btnCopyExtracted">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                <span id="copyBtnText">Copy Text</span>
+                            </button>
+                        </div>
+                        <pre class="extracted-text-area" id="extractedMessageText"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Educational / Architecture Flow Section -->
+<section class="info-section">
+    <div class="info-header">
+        <h2 class="info-title">How the Hybrid LSB-DCT Engine Works</h2>
+        <p class="info-subtitle">A balanced fusion of frequency domain resilience and spatial domain imperceptibility.</p>
+    </div>
+
+    <div class="steps-flow-grid">
+        <div class="step-card">
+            <div class="step-badge">1</div>
+            <h4>Color Conversion (YCbCr)</h4>
+            <p>The RGB image is transformed into YCbCr color space. Embedding is performed on the <strong>Luminance (Y) channel</strong>, which human vision is less sensitive to high-frequency variations in.</p>
+        </div>
+        <div class="step-card">
+            <div class="step-badge">2</div>
+            <h4>8x8 Block 2D-DCT</h4>
+            <p>The Y channel is divided into non-overlapping 8x8 blocks. 2D Discrete Cosine Transform converts each spatial block into frequency coefficients (DC and AC components).</p>
+        </div>
+        <div class="step-card">
+            <div class="step-badge">3</div>
+            <h4>Quantized LSB Embedding</h4>
+            <p>The mid-frequency coefficient at index <strong>(4, 3)</strong> is quantized with factor \(Q=20\). The secret bit is embedded into its Least Significant Bit (LSB), preventing compression distortion.</p>
+        </div>
+        <div class="step-card">
+            <div class="step-badge">4</div>
+            <h4>Inverse DCT & Metric Check</h4>
+            <p>2D Inverse DCT reconstructs the spatial pixels. Peak Signal-to-Noise Ratio (PSNR) is evaluated, maintaining pristine visual fidelity (\(> 40\,\text{dB}\)).</p>
+        </div>
+    </div>
+</section>
+{% endblock %}
